@@ -1,0 +1,45 @@
+[package]
+name = "xplane-web-api"
+version = "0.1.0"
+edition = "2024"
+authors = ["Lee Baker <lee@leecbaker.com>"]
+license = "MIT OR Apache-2.0"
+description = "Bindings to the X-Plane Web APIs (REST and websocket)"
+repository = "https://github.com/leecbaker/xplane-web-api"
+homepage = "https://github.com/leecbaker/xplane-web-api"
+documentation = "https://docs.rs/xplane-web-api"
+readme = "README.md"
+keywords = ["X-Plane", "plugin", "flightsim"]
+categories = ["api-bindings", "web-programming"]
+exclude = [
+    "AGENTS.md",
+]
+
+[[bin]]
+name = "xplane-web-api"
+path = "src/bin/xplane-web-api.rs"
+required-features = ["cli"]
+
+[features]
+default = []
+cli = ["dep:clap", "dep:env_logger", "dep:tokio"]
+websocket = ["dep:futures-util", "dep:tokio", "dep:tokio-tungstenite"]
+
+[dependencies]
+clap = { version = "4", optional = true, features = ["derive"] }
+env_logger = { version = "0.11", optional = true }
+futures-util = { version = "0.3", optional = true }
+progenitor-client = "0.13"
+reqwest = "0.13"
+serde = "1"
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1.50", features = ["net", "macros"], optional = true }
+tokio-tungstenite = { version = "0.29", optional = true }
+
+[build-dependencies]
+openapiv3 = "2"
+prettyplease = "0.2"
+progenitor = "0.13.0"
+yaml_serde = "0.10"
+syn = { version = "2", features = ["full"] }

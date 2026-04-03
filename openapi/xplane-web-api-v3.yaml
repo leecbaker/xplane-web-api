@@ -1,0 +1,581 @@
+openapi: 3.0.3
+info:
+  title: X-Plane Local Web API
+  version: "3.0"
+  description: |
+    OpenAPI model for the documented X-Plane local REST Web API using the latest
+    versioned REST paths (`/api/v3/...`) plus the unversioned capabilities endpoint.
+servers:
+  - url: http://localhost:8086
+paths:
+  /api/capabilities:
+    get:
+      tags: [Capabilities]
+      operationId: getCapabilities
+      summary: Get API capabilities and simulator version.
+      description: >
+        Returns the supported API versions and the running X-Plane version.
+        This endpoint is intentionally unversioned (`/api/capabilities`).
+      responses:
+        "200":
+          description: Capabilities payload.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapabilitiesResponse"
+        "403":
+          description: Incoming traffic disabled.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /api/v3/datarefs:
+    get:
+      tags: [Datarefs]
+      operationId: listDatarefs
+      summary: List datarefs.
+      description: >
+        Returns datarefs currently registered in the running simulator,
+        including built-in and third-party datarefs.
+      parameters:
+        - name: filter[name]
+          in: query
+          description: >
+            Repeatable exact-match filter by dataref name.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+        - name: start
+          in: query
+          description: >
+            Inclusive start index for pagination.
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+        - name: limit
+          in: query
+          description: >
+            Maximum number of records to return for pagination.
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: fields
+          in: query
+          description: >
+            Comma-separated field names to return for each record, or `all`
+            (default).
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of datarefs.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatarefListResponse"
+        "400":
+          description: Invalid request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Incoming traffic disabled.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Invalid dataref name filter.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /api/v3/datarefs/count:
+    get:
+      tags: [Datarefs]
+      operationId: getDatarefCount
+      summary: Get dataref count.
+      description: >
+        Returns the current number of registered datarefs in the running
+        simulator.
+      responses:
+        "200":
+          description: Count payload.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+
+  /api/v3/datarefs/{id}/value:
+    get:
+      tags: [Datarefs]
+      operationId: getDatarefValue
+      summary: Get a dataref value.
+      description: >
+        Returns the current value of a dataref, or a single element when an
+        array index is provided.
+      parameters:
+        - name: id
+          in: path
+          description: Dataref session ID.
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: index
+          in: query
+          description: Optional array index to read from array datarefs.
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+      responses:
+        "200":
+          description: Dataref value payload.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatarefValueResponse"
+        "400":
+          description: Invalid request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Incoming traffic disabled.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Invalid dataref id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    patch:
+      tags: [Datarefs]
+      operationId: setDatarefValue
+      summary: Set a dataref value.
+      description: >
+        Sets a dataref value. For array datarefs, callers can update one index
+        or provide values for the full array.
+      parameters:
+        - name: id
+          in: path
+          description: Dataref session ID.
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: index
+          in: query
+          description: Optional array index to update on array datarefs.
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+      requestBody:
+        required: true
+        description: >
+          JSON payload containing `data` as a scalar value, full array value,
+          or base64 string for binary datarefs.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DatarefValueWriteRequest"
+      responses:
+        "200":
+          description: Value was written.
+        "400":
+          description: Invalid request/body/value.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Incoming traffic disabled.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Invalid dataref id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /api/v3/commands:
+    get:
+      tags: [Commands]
+      operationId: listCommands
+      summary: List commands.
+      description: >
+        Returns commands currently registered in the running simulator,
+        including built-in and third-party commands.
+      parameters:
+        - name: filter[name]
+          in: query
+          description: >
+            Repeatable exact-match filter by command name.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+        - name: start
+          in: query
+          description: >
+            Inclusive start index for pagination.
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+        - name: limit
+          in: query
+          description: >
+            Maximum number of records to return for pagination.
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: fields
+          in: query
+          description: >
+            Comma-separated field names to return for each record, or `all`
+            (default).
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of commands.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommandListResponse"
+        "400":
+          description: Invalid request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Incoming traffic disabled.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Invalid command name filter.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /api/v3/commands/count:
+    get:
+      tags: [Commands]
+      operationId: getCommandCount
+      summary: Get command count.
+      description: >
+        Returns the current number of registered commands in the running
+        simulator.
+      responses:
+        "200":
+          description: Count payload.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+
+  /api/v3/command/{id}/activate:
+    post:
+      tags: [Commands]
+      operationId: activateCommand
+      summary: Activate a command for a fixed duration.
+      description: >
+        Triggers a command for a fixed duration in seconds.
+        A duration of `0` behaves like immediate press-and-release.
+      parameters:
+        - name: id
+          in: path
+          description: Command session ID.
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        description: >
+          JSON payload containing required `duration` in seconds.
+          Maximum allowed duration is 10 seconds.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivateCommandRequest"
+      responses:
+        "200":
+          description: Command activated.
+        "400":
+          description: Invalid request/body/duration.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Incoming traffic disabled.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Invalid command id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /api/v3/flight:
+    post:
+      tags: [Flight]
+      operationId: startFlight
+      summary: Start a new flight.
+      description: >
+        Starts a new flight using a complete flight initialization payload.
+      requestBody:
+        required: true
+        description: >
+          Full flight initialization object compatible with X-Plane's Flight
+          Initialization API schema.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlightRequest"
+      responses:
+        "200":
+          description: Flight started.
+        "400":
+          description: Invalid request/body/values.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Incoming traffic disabled.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    patch:
+      tags: [Flight]
+      operationId: updateFlight
+      summary: Update the current flight.
+      description: >
+        Updates the active flight using a complete or partial flight
+        initialization payload.
+      requestBody:
+        required: true
+        description: >
+          Partial or full flight initialization object.
+          Start location and aircraft are not changeable during update.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlightRequest"
+      responses:
+        "200":
+          description: Flight updated.
+        "400":
+          description: Invalid request/body/values.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Incoming traffic disabled.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+components:
+  schemas:
+    ApiError:
+      description: >
+        Standard REST API error payload returned on non-2xx responses.
+      type: object
+      required: [error_code, error_message]
+      properties:
+        error_code:
+          description: Machine-readable error code.
+          type: string
+        error_message:
+          description: Human-readable error message.
+          type: string
+
+    CapabilitiesResponse:
+      description: Supported API versions and running X-Plane version.
+      type: object
+      required: [api, x-plane]
+      properties:
+        api:
+          description: API capability information.
+          type: object
+          required: [versions]
+          properties:
+            versions:
+              description: Supported API versions (for example `v1`, `v2`, `v3`).
+              type: array
+              items:
+                type: string
+        x-plane:
+          description: Simulator build/version information.
+          type: object
+          required: [version]
+          properties:
+            version:
+              description: Running X-Plane version string.
+              type: string
+
+    Dataref:
+      description: Dataref descriptor from the running simulator session.
+      type: object
+      required: [id, name, value_type]
+      properties:
+        id:
+          description: >
+            Session-local numeric identifier used to read, write, and subscribe
+            to this dataref during the current simulator run.
+          type: integer
+          format: int64
+        name:
+          description: Fully qualified dataref name.
+          type: string
+        value_type:
+          description: >
+            Dataref value kind: `float`, `double`, `int`, `int_array`,
+            `float_array`, or `data` (binary represented as base64 text).
+          type: string
+          enum: [float, double, int, int_array, float_array, data]
+
+    Command:
+      description: Command descriptor from the running simulator session.
+      type: object
+      required: [id, name, description]
+      properties:
+        id:
+          description: >
+            Session-local numeric identifier used to activate and subscribe to
+            this command during the current simulator run.
+          type: integer
+          format: int64
+        name:
+          description: Fully qualified command name.
+          type: string
+        description:
+          description: Human-readable command description.
+          type: string
+
+    DatarefListResponse:
+      description: Response wrapper for dataref list queries.
+      type: object
+      required: [data]
+      properties:
+        data:
+          description: Array of dataref descriptors.
+          type: array
+          items:
+            $ref: "#/components/schemas/Dataref"
+
+    CommandListResponse:
+      description: Response wrapper for command list queries.
+      type: object
+      required: [data]
+      properties:
+        data:
+          description: Array of command descriptors.
+          type: array
+          items:
+            $ref: "#/components/schemas/Command"
+
+    CountResponse:
+      description: Response wrapper for count endpoints.
+      type: object
+      required: [data]
+      properties:
+        data:
+          description: Count value.
+          type: integer
+          format: int64
+
+    DatarefValue:
+      description: >
+        Dataref value represented as JSON. Scalars and arrays map to native JSON
+        number/array values; binary `data` values are base64-encoded strings.
+
+    DatarefValueResponse:
+      description: Response wrapper for a single dataref value read.
+      type: object
+      required: [data]
+      properties:
+        data:
+          description: Current dataref value.
+          $ref: "#/components/schemas/DatarefValue"
+
+    DatarefValueWriteRequest:
+      description: Request payload for writing a dataref value.
+      type: object
+      required: [data]
+      properties:
+        data:
+          description: Value to write.
+          $ref: "#/components/schemas/DatarefValue"
+
+    ActivateCommandRequest:
+      description: Request payload for fixed-duration command activation.
+      type: object
+      required: [duration]
+      properties:
+        duration:
+          description: >
+            Command active duration in seconds.
+            `0` means immediate press-and-release.
+          type: number
+          format: double
+          minimum: 0
+          maximum: 10
+
+    FlightRequest:
+      description: >
+        Flight initialization payload wrapper used for start/update flight REST
+        operations.
+      type: object
+      required: [data]
+      properties:
+        data:
+          description: >
+            Flight initialization object compatible with X-Plane's Flight
+            Initialization API.
+          type: object
+          additionalProperties: true
